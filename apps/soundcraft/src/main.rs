@@ -20,7 +20,7 @@ mod logging;
 mod native_menu;
 
 use soundcraft_engine::Engine;
-use soundcraft_ui_egui::{Services, SoundApp, UiState, dialogs};
+use soundcraft_ui_egui::{Services, SoundApp, UiState, dialogs, i18n};
 use std::sync::Arc;
 
 struct App(SoundApp, Option<&'static logging::AppLogger>, #[cfg(target_os = "macos")] Option<native_menu::NativeMenu>);
@@ -79,7 +79,7 @@ impl eframe::App for App {
                 "{}{} — SoundCraft — {}",
                 self.0.engine.session().name,
                 if self.0.engine.is_dirty() { " *" } else { "" },
-                if self.0.ui.window == soundcraft_ui_egui::MainWindow::Edit { "Edit" } else { "Mix" }
+                if self.0.ui.window == soundcraft_ui_egui::MainWindow::Edit { i18n::tr("Edit") } else { i18n::tr("Mix") }
             )
         } else {
             format!("{} — SoundCraft", self.0.engine.session().name)
