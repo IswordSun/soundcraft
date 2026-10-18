@@ -71,6 +71,10 @@ impl Language {
 
     /// The language a BCP 47 system locale asks for. Unknown and Traditional Chinese locales
     /// fall back to English rather than showing Simplified labels to a Traditional reader.
+    ///
+    /// An explicit script subtag wins over the region: `zh-Hans-HK` is Simplified Chinese even
+    /// though Hong Kong defaults to Traditional, and `zh-Hant-CN` is Traditional. Only a locale
+    /// without `Hans`/`Hant` uses the region (`TW`, `HK`, `MO` = Traditional).
     pub fn from_locale(locale: &str) -> Self {
         let locale = locale.split(['.', '@']).next().unwrap_or("").replace('_', "-").to_ascii_lowercase();
         if locale == "zh" {
@@ -79,8 +83,24 @@ impl Language {
         if !locale.starts_with("zh-") {
             return Self::English;
         }
-        let traditional = locale.split('-').skip(1).any(|part| matches!(part, "hant" | "tw" | "hk" | "mo"));
-        if traditional { Self::English } else { Self::SimplifiedChinese }
+        let mut has_hans = false;
+        let mut has_hant = false;
+        let mut traditional_region = false;
+        for part in locale.split('-').skip(1) {
+            match part {
+                "hans" => has_hans = true,
+                "hant" => has_hant = true,
+                "tw" | "hk" | "mo" => traditional_region = true,
+                _ => {}
+            }
+        }
+        if has_hans {
+            Self::SimplifiedChinese
+        } else if has_hant || traditional_region {
+            Self::English
+        } else {
+            Self::SimplifiedChinese
+        }
     }
 }
 
@@ -202,9 +222,18 @@ mod tests {
 
     #[test]
     fn other_locales_stay_english() {
-        for locale in ["en-US", "en_GB.UTF-8", "fr-FR", "ja-JP", "", "zh-Hant", "zh-TW", "zh-HK", "zh-MO"] {
+        for locale in ["en-US", "en_GB.UTF-8", "fr-FR", "ja-JP", "", "zh-Hant", "zh-TW", "zh-HK", "zh-MO", "zh-Hant-CN", "zh-Hant-SG"] {
             assert_eq!(Language::from_locale(locale), Language::English, "{locale}");
         }
+    }
+
+    #[test]
+    fn an_explicit_script_subtag_wins_over_the_region() {
+        for locale in ["zh-Hans-HK", "zh-Hans-MO", "zh-Hans-TW", "zh-Hans-Hant"] {
+            assert_eq!(Language::from_locale(locale), Language::SimplifiedChinese, "{locale}");
+        }
+        assert_eq!(Language::from_locale("zh-Hant-CN"), Language::English);
+        assert_eq!(Language::from_locale("zh-Hant-SG"), Language::English);
     }
 
     #[test]

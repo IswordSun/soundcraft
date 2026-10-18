@@ -1,6 +1,6 @@
 # Localization parity
 
-> **Last reviewed:** 2026-10-18 · **Last updated:** 2026-10-18 · **Change:** minor (Simplified Chinese menus) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-10-19 · **Last updated:** 2026-10-19 · **Change:** minor (review fixes) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 SoundCraft's source language is English. Menu labels now have a path-keyed Simplified Chinese
 table; dialogs, panels, tooltips and status messages are still English literals in Rust
@@ -35,7 +35,10 @@ multilingual fonts for the web/offline builds, pending), issue #67 (Ukrainian).
   the same translation table.
 - Chinese glyphs come from an operating-system font loaded at runtime (Hiragino Sans GB, STHeiti
   or Songti on macOS; Microsoft YaHei on Windows; Noto Sans CJK SC, Source Han Sans SC or WenQuanYi
-  on Linux/FreeBSD). No font is redistributed, so `ATTRIBUTION.md` is unchanged. The web build has
+  on Linux/FreeBSD). The Han collection is large (Hiragino Sans GB is 23 MB), so it is read only
+  when the interface language is Simplified Chinese; English launches do not pay that memory cost.
+  Chinese track or clip names in an English interface are the separate multilingual-name problem
+  tracked in PR #141. No font is redistributed, so `ATTRIBUTION.md` is unchanged. The web build has
   no CJK font yet and deliberately stays English instead of drawing empty boxes.
 - Product and plug-in names (Pro Tools, AudioSuite, HEAT, QuickPunch, D-Verb, Melodyne, …) stay in
   English, as in other DAWs.
@@ -67,5 +70,6 @@ engineer should read it before it is called complete.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-19 | minor | Locale script subtag wins over region (`zh-Hans-HK`/`MO` are Simplified); Han font loaded only for a Chinese interface (saves 23 MB on English launches); native macOS menu bar checked with the real NSMenu |
 | 2026-10-18 | minor | Simplified Chinese menus: system-language detection, 584 path-keyed labels, `SOUNDCRAFT_LANG`, CJK system-font fallback (native only); dialogs and panels still English |
 | 2026-10-10 | major | Created: English only, no catalog; the twelve key languages at 0 %; Pro Tools' 8 languages listed from its bundle |

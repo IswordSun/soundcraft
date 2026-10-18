@@ -149,7 +149,14 @@ pub fn definitions() -> FontDefinitions {
     fonts.families.insert(FontFamily::Name("bold".into()), bold_family);
     // Han before Hangul: some Korean fonts carry Hanja glyphs, and a Chinese menu must use the
     // Chinese face. Both come last so the Latin UI font keeps its own punctuation and digits.
-    if let Some(h) = load(HAN, "sans-serif:lang=zh-cn", Some("zh-cn")) {
+    //
+    // The Han collection is large (Hiragino Sans GB is 23 MB, PingFang 75 MB), so only a Chinese
+    // interface reads it. An English interface with Chinese track or clip names is the separate
+    // multilingual-name problem tracked in PR #141; loading 23 MB for every English launch would
+    // make the menu localization cost memory it does not need.
+    if crate::i18n::current() == crate::i18n::Language::SimplifiedChinese
+        && let Some(h) = load(HAN, "sans-serif:lang=zh-cn", Some("zh-cn"))
+    {
         fonts.font_data.insert("system-han".into(), Arc::new(h));
         for family in fonts.families.values_mut() {
             family.push("system-han".into());
@@ -194,9 +201,18 @@ mod tests {
         assert!(HAN.iter().any(|(p, i)| p.ends_with("Hiragino Sans GB.ttc") && *i == 0));
     }
 
+    /// An English interface does not pay for the Han font, even though the file is installed.
+    #[test]
+    fn an_english_interface_does_not_load_the_han_font() {
+        crate::i18n::set(crate::i18n::Language::English);
+        let defs = definitions();
+        assert!(!defs.font_data.contains_key("system-han"));
+    }
+
     /// Chinese menu labels draw in every family, not as boxes; skipped without a Chinese font.
     #[test]
     fn every_family_draws_han_with_a_system_chinese_font() {
+        crate::i18n::set(crate::i18n::Language::SimplifiedChinese);
         let defs = definitions();
         if !defs.font_data.contains_key("system-han") {
             eprintln!("skipping: no Chinese system font");
