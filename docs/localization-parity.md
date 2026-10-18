@@ -19,10 +19,13 @@ multilingual fonts for the web/offline builds, pending), issue #67 (Ukrainian).
 
 ## How the Chinese menus work
 
-- `crates/ui-egui/src/i18n/` owns the language choice. At startup it asks the operating system for
-  its preferred locale (`sys-locale`: `AppleLanguages` on macOS, `GetUserPreferredUILanguages` on
-  Windows, `LC_*`/`LANG` on Linux and BSD). A locale such as `zh-Hans-CN`, `zh_CN.UTF-8` or
-  `zh-SG` selects Simplified Chinese; English and all other locales keep English.
+- `crates/ui-egui/src/i18n/` owns the language choice. By default it follows the operating
+  system: `sys-locale` reads `AppleLanguages` on macOS, `GetUserPreferredUILanguages` on Windows,
+  and `LC_*`/`LANG` on Linux and BSD. A locale such as `zh-Hans-CN`, `zh_CN.UTF-8` or `zh-SG`
+  selects Simplified Chinese; English and all other locales keep English.
+- **Setup › Appearance › Language** (or `ui.language {"lang":"system"|"en"|"zh-Hans"}`) pins a
+  language and saves it in the UI preferences. On macOS the native menu bar is rebuilt on a
+  change. `System` is the default, so a Chinese system gets Chinese menus on first launch.
 - `SOUNDCRAFT_LANG=en` / `SOUNDCRAFT_LANG=zh-Hans` (or `zh-CN`, `zh_CN`, `简体中文`) overrides the
   system choice, for screenshots, tests and users whose OS language is not the one they want.
 - Only presentation is translated. A menu node keeps its English `path` (for example
@@ -70,6 +73,6 @@ engineer should read it before it is called complete.
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-10-19 | minor | Locale script subtag wins over region (`zh-Hans-HK`/`MO` are Simplified); Han font loaded only for a Chinese interface (saves 23 MB on English launches); native macOS menu bar checked with the real NSMenu |
+| 2026-10-19 | minor | Locale script subtag wins over region (`zh-Hans-HK`/`MO` are Simplified); Han font loaded only for a Chinese interface (saves 23 MB on English launches); saved **Setup › Appearance › Language** setting and `ui.language` command, with macOS native-menu rebuild; native macOS menu bar checked with the real NSMenu |
 | 2026-10-18 | minor | Simplified Chinese menus: system-language detection, 584 path-keyed labels, `SOUNDCRAFT_LANG`, CJK system-font fallback (native only); dialogs and panels still English |
 | 2026-10-10 | major | Created: English only, no catalog; the twelve key languages at 0 %; Pro Tools' 8 languages listed from its bundle |

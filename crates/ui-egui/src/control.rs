@@ -154,6 +154,10 @@ fn handle(app: &mut SoundApp, ctx: &egui::Context, req: &ControlRequest) -> Opti
             Ok(v) => ok(v),
             Err(e) => err(e),
         },
+        "ui.language" => match app.run("ui.language", p.clone()) {
+            Ok(v) => ok(v),
+            Err(e) => err(e),
+        },
         "ui.move" => {
             app.synthetic.push(egui::Event::PointerMoved(pos));
             ok(json!({}))

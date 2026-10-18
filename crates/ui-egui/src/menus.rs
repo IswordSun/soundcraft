@@ -73,6 +73,7 @@ pub const UI_COMMANDS: &[(&str, &str, &str, Option<&str>)] = &[
     ("ui.bounce_dialog", "Bounce Mix…", "", None),
     ("ui.set", "Set UI State", "", None),
     ("ui.theme", "Appearance", "", None),
+    ("ui.language", "Language", "", None),
 ];
 
 /// Extra catalog mappings handled by the UI layer.
@@ -638,6 +639,16 @@ pub fn run_ui_command(app: &mut SoundApp, id: &str, p: &Value) -> Option<Result<
             app.ui.theme = mode;
             json!({"mode": mode.id()})
         }
+        "ui.language" => {
+            let Some(value) = p.get("lang").and_then(Value::as_str) else {
+                return Some(Ok(json!({"lang": app.ui.language.id()})));
+            };
+            let Some(setting) = i18n::LanguageSetting::parse(value) else {
+                return Some(Err(format!("unknown language `{value}` (system, en or zh-Hans)")));
+            };
+            app.set_language(setting);
+            json!({"lang": setting.id()})
+        }
         "ui.set" => match serde_json::to_value(&app.ui) {
             Ok(mut cur) => {
                 if let (Some(obj), Some(patch)) = (cur.as_object_mut(), p.as_object()) {
@@ -650,8 +661,12 @@ pub fn run_ui_command(app: &mut SoundApp, id: &str, p: &Value) -> Option<Result<
                         if let Err(error) = ns.docking.validate().and_then(|()| ns.mix_docking.validate_mix()) {
                             return Some(Err(error));
                         }
+                        let language = app.ui.language;
                         crate::docking::cancel_replaced_state(app, &ns);
                         app.ui = ns;
+                        if app.ui.language != language {
+                            app.apply_language_setting();
+                        }
                         json!({"ui": app.ui})
                     }
                     Err(e) => return Some(Err(format!("bad ui state: {e}"))),

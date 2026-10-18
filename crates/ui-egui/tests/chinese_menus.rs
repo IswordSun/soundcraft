@@ -4,7 +4,9 @@
 use egui::vec2;
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
-use soundcraft_ui_egui::{Services, SoundApp, i18n, menus};
+use serde_json::json;
+use soundcraft_ui_egui::{ControlRequest, Services, SoundApp, control, i18n, menus};
+use std::sync::mpsc;
 
 fn harness() -> Harness<'static, SoundApp> {
     let app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
@@ -50,6 +52,48 @@ fn undo_and_redo_labels_follow_the_language() {
     assert_eq!(menus::live_label(&app, Some("edit.undo")).as_deref(), Some("撤销 Mute"));
     i18n::set(i18n::Language::English);
     assert_eq!(menus::live_label(&app, Some("edit.undo")).as_deref(), Some("Undo Mute"));
+}
+
+#[test]
+fn the_language_command_switches_saves_and_reports() {
+    i18n::set_setting(i18n::LanguageSetting::System);
+    let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    assert_eq!(app.ui.language, i18n::LanguageSetting::System);
+
+    let reply = app.run("ui.language", json!({"lang": "zh-Hans"})).expect("set language");
+    assert_eq!(reply["lang"], "zh-Hans");
+    assert_eq!(app.ui.language, i18n::LanguageSetting::SimplifiedChinese);
+    assert_eq!(i18n::current(), i18n::Language::SimplifiedChinese);
+    assert!(app.take_language_changed(), "the host must save the preference");
+
+    assert_eq!(app.run("ui.language", json!({})).expect("read language")["lang"], "zh-Hans");
+    assert!(app.run("ui.language", json!({"lang": "fr"})).is_err());
+    assert!(app.run("ui.language", json!({"lang": "zh-Hant"})).is_err());
+}
+
+#[test]
+fn the_control_channel_can_set_the_language() {
+    i18n::set_setting(i18n::LanguageSetting::System);
+    let (tx, rx) = mpsc::channel();
+    let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default()).with_control(rx);
+    let (request, reply) = ControlRequest::new("ui.language", json!({"lang": "zh-Hans"}));
+    tx.send(request).expect("control request");
+    control::drain(&mut app, &egui::Context::default());
+    let response = reply.try_recv().expect("control reply");
+    assert_eq!(response["ok"], true, "{response}");
+    assert_eq!(response["result"]["lang"], "zh-Hans");
+    assert_eq!(app.ui.language, i18n::LanguageSetting::SimplifiedChinese);
+    assert_eq!(i18n::current(), i18n::Language::SimplifiedChinese);
+}
+
+#[test]
+fn ui_set_can_change_the_saved_language_too() {
+    i18n::set_setting(i18n::LanguageSetting::System);
+    let mut app = SoundApp::new(soundcraft_engine::demo::demo_engine(), None, Services::default());
+    app.run("ui.set", json!({"language": "en"})).expect("ui.set language");
+    assert_eq!(app.ui.language, i18n::LanguageSetting::English);
+    assert_eq!(i18n::current(), i18n::Language::English);
+    assert!(app.take_language_changed());
 }
 
 #[test]
